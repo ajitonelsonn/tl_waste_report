@@ -6,9 +6,9 @@
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" /> <!-- Optional, if needed -->
     
     <application
-        android:label="tl_waste_monitoring"
+        android:label="TL WasteR"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <!-- Rest of your application configuration remains the same -->
         <activity
             android:name=".MainActivity"

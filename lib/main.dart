@@ -73,8 +73,8 @@ class MyApp extends StatelessWidget {
               RegisterScreen.routeName: (context) => const RegisterScreen(),
               HomeScreen.routeName: (context) => const HomeScreen(),
               ReportScreen.routeName: (context) => const ReportScreen(),
-              MapScreen.routeName: (context) => const MapScreen(),
-              ProfileScreen.routeName: (context) => const ProfileScreen(),
+              MapScreen.routeName: (context) => const MapScreen(), // Will show back button
+              ProfileScreen.routeName: (context) => const ProfileScreen(), // Will show back button
               ReportDetailScreen.routeName: (context) => ReportDetailScreen(
                 reportId: ModalRoute.of(context)!.settings.arguments as int,),
             },
@@ -87,6 +87,12 @@ class MyApp extends StatelessWidget {
                     child: Text('Route ${settings.name} not found!'),
                   ),
                 ),
+              );
+            },
+            onUnknownRoute: (settings) {
+              // Fallback for routes that don't exist - go to home screen
+              return MaterialPageRoute(
+                builder: (_) => const HomeScreen(),
               );
             },
           );

@@ -38,6 +38,7 @@ dependencies:
   google_fonts: ^5.1.0
   animate_do: ^3.0.2
   lottie: ^2.5.0
+  fl_chart:
 
 dev_dependencies:
   flutter_test:
@@ -51,7 +52,12 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/default-avatar.jpg
+    - assets/images/pattern.png
+    - assets/images/empty_reports.png
     - assets/translations/
+    - assets/images/app_icon.png
+    - assets/images/app_icon_foreground.png
     - .env
 
   fonts:
