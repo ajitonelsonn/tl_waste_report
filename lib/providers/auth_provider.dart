@@ -1,0 +1,379 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';  // Add this import for navigation
+
+import '../models/user.dart';
+import '../services/api_service.dart';
+import '../services/storage_service.dart';
+import '../screens/login_screen.dart';
+
+class AuthProvider with ChangeNotifier {
+  User? _user;
+  String? _token;
+  DateTime? _tokenExpiry;
+  Timer? _authTimer;
+  bool _isLoading = false;
+  bool _hasError = false;
+  String _errorMessage = '';
+  final StorageService _storageService;
+  final ApiService _apiService = ApiService();
+  
+  // Add BuildContext as an optional parameter
+  BuildContext? _context;
+  
+  AuthProvider({required StorageService storageService}) 
+      : _storageService = storageService {
+    // Attempt to load user data from secure storage on initialization
+    _autoLogin();
+  }
+  
+  // Method to set context
+  void setContext(BuildContext context) {
+    _context = context;
+  }
+  
+  // Getters
+  User? get currentUser => _user;
+  String? get token => _token;
+  bool get isAuth => _token != null && _user != null;
+  bool get isLoading => _isLoading;
+  bool get hasError => _hasError;
+  String get errorMessage => _errorMessage;
+  
+  // Automatically login from stored credentials
+  Future<void> _autoLogin() async {
+    _setLoading(true);
+    
+    try {
+      // Load token and user data from secure storage
+      final savedToken = await _storageService.read('auth_token');
+      final userDataStr = await _storageService.read('user_data');
+      
+      if (savedToken == null || userDataStr == null) {
+        _setLoading(false);
+        return;
+      }
+      
+      // Parse user data
+      final userData = json.decode(userDataStr);
+      _user = User.fromJson(userData);
+      _token = savedToken;
+      
+      // Set auto-logout timer
+      _autoLogout();
+      
+      notifyListeners();
+    } catch (e) {
+      // If there's an error loading credentials, clear everything
+      await _clearAuthData();
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  // Sign in user
+  Future<bool> signIn(String username, String password) async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      print("Attempting to sign in with username: $username");
+      final response = await _apiService.login(
+        username: username,
+        password: password,
+      );
+      
+      print("Login API response: $response");
+      print("Response success: ${response['success']}");
+      
+      if (response['success']) {
+        // Save credentials
+        _token = response['token'];
+        print("Token received: $_token");
+        
+        try {
+          _user = User.fromJson(response['user']);
+          print("User parsed successfully: ${_user?.username}");
+        } catch (e) {
+          print("Error parsing user data: $e");
+          _setError('Error parsing user data: $e');
+          return false;
+        }
+        
+        // Save to secure storage
+        try {
+          await _saveAuthData();
+          print("Auth data saved to secure storage");
+        } catch (e) {
+          print("Error saving auth data: $e");
+          _setError('Error saving auth data: $e');
+          return false;
+        }
+        
+        // Set auto-logout timer
+        _autoLogout();
+        
+        notifyListeners();
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Authentication failed.');
+        return false;
+      }
+    } catch (e) {
+      print("SignIn exception: $e");
+      _setError('Failed to connect to server. Please check your internet connection.');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  // Register new user
+  Future<bool> register(String username, String email, String password, {String? phoneNumber}) async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      final response = await _apiService.register(
+        username: username,
+        email: email,
+        password: password,
+        phoneNumber: phoneNumber,
+      );
+      
+      if (response['success']) {
+        // Save credentials
+        _token = response['token'];
+        _user = User.fromJson(response['user']);
+        
+        // Save to secure storage
+        await _saveAuthData();
+        
+        // Set auto-logout timer
+        _autoLogout();
+        
+        notifyListeners();
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Registration failed.');
+        return false;
+      }
+    } catch (e) {
+      _setError('Failed to connect to server. Please check your internet connection.');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  // Sign out user and navigate to login screen
+  Future<void> signOut() async {
+    await _clearAuthData();
+
+    _user = null;
+    _token = null;
+    _tokenExpiry = null;
+
+    if (_authTimer != null) {
+      _authTimer!.cancel();
+      _authTimer = null;
+    }
+
+    notifyListeners();
+    
+    // Navigation if context is provided
+    if (_context != null) {
+      Navigator.of(_context!).pushNamedAndRemoveUntil(
+        LoginScreen.routeName, 
+        (route) => false
+      );
+    }
+  }
+  
+  // Save authentication data to secure storage
+  Future<void> _saveAuthData() async {
+    if (_user != null && _token != null) {
+      await _storageService.write('auth_token', _token!);
+      await _storageService.write('user_data', json.encode(_user!.toJson()));
+    }
+  }
+  
+  // Clear authentication data from secure storage
+  Future<void> _clearAuthData() async {
+    await _storageService.delete('auth_token');
+    await _storageService.delete('user_data');
+  }
+  
+  // Set timer for automatic logout when token expires
+  void _autoLogout() {
+    if (_authTimer != null) {
+      _authTimer!.cancel();
+    }
+    
+    // Set logout timer to 23 hours to refresh before expiry
+    _authTimer = Timer(const Duration(hours: 23), () => signOut());
+  }
+  
+  // Update user profile
+  // In auth_provider.dart, update the updateProfile method:
+
+Future<bool> updateProfile({
+  String? email,
+  String? phoneNumber,
+  String? profileImageUrl,
+}) async {
+  if (_user == null || _token == null) {
+    _setError('Not authenticated');
+    return false;
+  }
+  
+  _setLoading(true);
+  _clearError();
+  
+  try {
+    final response = await _apiService.updateUserProfile(
+      userId: _user!.id,
+      token: _token!,
+      email: email,
+      phoneNumber: phoneNumber,
+      profileImageUrl: profileImageUrl,
+    );
+    
+    if (response['success'] || response['status'] == 'success') {
+      // Check if user data is an array (as in your API response) or an object
+      var userData;
+      if (response['user'] is List) {
+        // Handle array format - create a map from the array
+        final userArray = response['user'] as List;
+        if (userArray.isNotEmpty) {
+          userData = {
+            'user_id': userArray[0],
+            'username': userArray[1],
+            'email': userArray[2],
+            'phone_number': userArray[3],
+            'registration_date': userArray[4],
+            'last_login': userArray[5],
+            'account_status': userArray[6],
+            'profile_image_url': userArray[7],
+            'verification_status': userArray[8],
+          };
+        }
+      } else {
+        // Handle object format
+        userData = response['user'];
+      }
+      
+      if (userData != null) {
+        // Update user data
+        try {
+          _user = User.fromJson(userData);
+          
+          // Update secure storage
+          await _storageService.write('user_data', json.encode(_user!.toJson()));
+          
+          notifyListeners();
+          return true;
+        } catch (e) {
+          print("Error parsing user data: $e");
+          _setError('Error processing user data');
+          return false;
+        }
+      } else {
+        _setError('Invalid user data in response');
+        return false;
+      }
+    } else {
+      _setError(response['message'] ?? 'Profile update failed.');
+      return false;
+    }
+  } catch (e) {
+    _setError('Failed to connect to server. Please check your internet connection.');
+    return false;
+  } finally {
+    _setLoading(false);
+  }
+}
+  
+  // Change password
+  Future<bool> changePassword(String currentPassword, String newPassword) async {
+    if (_user == null || _token == null) {
+      _setError('Not authenticated');
+      return false;
+    }
+    
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      final response = await _apiService.changePassword(
+        token: _token!,
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      
+      if (response['success']) {
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Password change failed.');
+        return false;
+      }
+    } catch (e) {
+      _setError('Failed to connect to server. Please check your internet connection.');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  // Refresh user profile
+  Future<bool> refreshProfile() async {
+    if (_user == null || _token == null) {
+      _setError('Not authenticated');
+      return false;
+    }
+    
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      final response = await _apiService.getUserProfile(
+        userId: _user!.id,
+        token: _token!,
+      );
+      
+      if (response['success']) {
+        _user = User.fromJson(response['user']);
+        await _storageService.write('user_data', json.encode(_user!.toJson()));
+        notifyListeners();
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Failed to refresh profile.');
+        return false;
+      }
+    } catch (e) {
+      _setError('Failed to connect to server. Please check your internet connection.');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+  
+  // Utility methods for state management
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+  
+  void _setError(String message) {
+    _hasError = true;
+    _errorMessage = message;
+    notifyListeners();
+  }
+  
+  void _clearError() {
+    _hasError = false;
+    _errorMessage = '';
+    notifyListeners();
+  }
+}
