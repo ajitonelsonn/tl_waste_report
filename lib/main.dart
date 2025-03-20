@@ -15,6 +15,7 @@ import 'screens/map_screen.dart';
 import 'screens/profile_screen.dart';
 import 'services/storage_service.dart';
 import 'screens/report_detail_screen.dart';
+import 'screens/otp_verification_screen.dart';
 
 void main() async {
   // Ensure Flutter widgets are initialized
@@ -22,10 +23,6 @@ void main() async {
   
   // Load environment variables
   await dotenv.load(fileName: ".env");
-  
-  // Debug print for loaded environment variables
-  print("API_BASE_URL: ${dotenv.env['API_BASE_URL']}");
-  print("REPORTING_AGENT_URL: ${dotenv.env['REPORTING_AGENT_URL']}");
   
   // Initialize local storage
   final storageService = StorageService();
@@ -60,7 +57,7 @@ class MyApp extends StatelessWidget {
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
           return MaterialApp(
-            title: 'TL Waste Monitoring',
+            title: 'TL WasteR',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.system,
@@ -77,10 +74,15 @@ class MyApp extends StatelessWidget {
               ProfileScreen.routeName: (context) => const ProfileScreen(), // Will show back button
               ReportDetailScreen.routeName: (context) => ReportDetailScreen(
                 reportId: ModalRoute.of(context)!.settings.arguments as int,),
+              // Add the OTP verification screen route - updated to match new constructor
+              OtpVerificationScreen.routeName: (context) => OtpVerificationScreen(
+                email: '',
+                username: '',
+                isRegistration: true,
+              ),
             },
             // If route not found in the routes map
             onGenerateRoute: (settings) {
-              print("Navigating to undefined route: ${settings.name}");
               return MaterialPageRoute(
                 builder: (_) => Scaffold(
                   body: Center(

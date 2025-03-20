@@ -365,6 +365,103 @@ class ApiService {
     
     return results;
   }
+
+  // Add these methods to your existing ApiService class
+
+  // Verify Registration OTP
+
+   Future<Map<String, dynamic>> verifyRegistration({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBaseUrl/api/auth/verify-registration'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'email': email,
+          'otp': otp,
+        }),
+      );
+      
+      return _parseResponse(response);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to verify registration. Please try again.',
+      };
+    }
+  }
+  
+  // Verify OTP for existing account
+  Future<Map<String, dynamic>> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBaseUrl/api/auth/verify-otp'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'email': email,
+          'otp': otp,
+        }),
+      );
+      
+      return _parseResponse(response);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to verify OTP. Please try again.',
+      };
+    }
+  }
+  
+  // Resend OTP for registration
+  Future<Map<String, dynamic>> resendRegistrationOtp({
+    required String email,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBaseUrl/api/auth/resend-otp'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'email': email,
+        }),
+      );
+      
+      return _parseResponse(response);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to resend OTP. Please try again.',
+      };
+    }
+  }
+  
+  // Send OTP for existing account
+  Future<Map<String, dynamic>> sendOtp({
+    required String email,
+    required String username,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBaseUrl/api/auth/send-otp'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'email': email,
+          'username': username,
+        }),
+      );
+      
+      return _parseResponse(response);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Failed to send OTP. Please try again.',
+      };
+    }
+  }
   
   // Helper methods
   

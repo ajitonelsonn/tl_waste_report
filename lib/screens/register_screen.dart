@@ -1,10 +1,12 @@
+// lib/screens/register_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../utils/validators.dart';
 import '../widgets/custom_button.dart';
-import 'home_screen.dart';
+import '../services/api_service.dart';
+import 'otp_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   static const routeName = '/register';
@@ -21,8 +23,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _phoneController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
+  String? _errorMessage;
+  final ApiService _apiService = ApiService();
 
   @override
   void dispose() {
@@ -30,6 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -42,19 +49,60 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
 
-    // Get auth provider
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-    // Attempt registration
-    final success = await authProvider.register(
-      _usernameController.text.trim(),
-      _emailController.text.trim(),
-      _passwordController.text,
-    );
-
-    // If successful, navigate to home screen
-    if (success && mounted) {
-      Navigator.of(context).pushReplacementNamed(HomeScreen.routeName);
+    try {
+      final username = _usernameController.text.trim();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+      final phoneNumber = _phoneController.text.trim();
+      
+      // Call API to register user
+      final response = await _apiService.register(
+        username: username,
+        email: email,
+        password: password,
+        phoneNumber: phoneNumber.isNotEmpty ? phoneNumber : null,
+      );
+      
+      if (response['success']) {
+        if (mounted) {
+          // Navigate to OTP verification screen
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => OtpVerificationScreen(
+                email: email,
+                username: username,
+                isRegistration: true,
+              ),
+            ),
+          );
+          
+          // Show a success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration initiated. Please verify your email.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        // Handle error
+        setState(() {
+          _errorMessage = response['message'] ?? 'Registration failed';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to connect to server. Please try again later.';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -83,7 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Join TL Waste Monitoring',
+                  'Join TL WasteR',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.headlineMedium?.copyWith(
                     color: theme.primaryColor,
@@ -155,6 +203,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Phone field (optional)
+                      TextFormField(
+                        controller: _phoneController,
+                        decoration: const InputDecoration(
+                          labelText: 'Phone Number (Optional)',
+                          hintText: 'Enter your phone number',
+                          prefixIcon: Icon(Icons.phone),
+                        ),
+                        keyboardType: TextInputType.phone,
+                        textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 16),
 
@@ -236,7 +297,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       const SizedBox(height: 24),
 
                       // Error message
-                      if (authProvider.hasError)
+                      if (_errorMessage != null || authProvider.hasError)
                         Container(
                           padding: const EdgeInsets.all(8),
                           margin: const EdgeInsets.only(bottom: 16),
@@ -251,7 +312,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  authProvider.errorMessage,
+                                  _errorMessage ?? authProvider.errorMessage,
                                   style: const TextStyle(color: Colors.red),
                                 ),
                               ),
@@ -264,7 +325,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         text: 'Create Account',
                         icon: Icons.person_add,
                         onPressed: _register,
-                        isLoading: authProvider.isLoading,
+                        isLoading: _isLoading || authProvider.isLoading,
                       ),
                       const SizedBox(height: 16),
 

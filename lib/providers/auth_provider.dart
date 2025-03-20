@@ -133,37 +133,49 @@ class AuthProvider with ChangeNotifier {
   Future<bool> register(String username, String email, String password, {String? phoneNumber}) async {
     _setLoading(true);
     _clearError();
-    
+
     try {
+      print("Attempting to register with username: $username, email: $email");
       final response = await _apiService.register(
         username: username,
         email: email,
         password: password,
         phoneNumber: phoneNumber,
       );
-      
-      if (response['success']) {
-        // Save credentials
-        _token = response['token'];
-        _user = User.fromJson(response['user']);
-        
-        // Save to secure storage
-        await _saveAuthData();
-        
-        // Set auto-logout timer
-        _autoLogout();
-        
-        notifyListeners();
+
+      print("Registration API response: $response");
+
+      if (response['success'] || response['status'] == 'success') {
+        // Don't try to save user data yet - this happens after OTP verification
+        print("Registration initiated successfully");
         return true;
       } else {
         _setError(response['message'] ?? 'Registration failed.');
         return false;
       }
     } catch (e) {
+      print("Registration exception: $e");
       _setError('Failed to connect to server. Please check your internet connection.');
       return false;
     } finally {
       _setLoading(false);
+    }
+  }
+  Future<void> saveAuthDataFromResponse(Map<String, dynamic> data) async {
+    try {
+      if (data['token'] != null && data['user'] != null) {
+        _token = data['token'];
+        _user = User.fromJson(data['user']);
+        
+        // Save to secure storage
+        await _storageService.write('auth_token', _token!);
+        await _storageService.write('user_data', json.encode(_user!.toJson()));
+        
+        notifyListeners();
+      }
+    } catch (e) {
+      print("Error saving auth data: $e");
+      _setError('Error processing authentication data');
     }
   }
   
