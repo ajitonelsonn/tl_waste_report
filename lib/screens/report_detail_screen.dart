@@ -30,6 +30,7 @@ class ReportDetailScreen extends StatefulWidget {
 class _ReportDetailScreenState extends State<ReportDetailScreen> {
   Report? _report;
   bool _isLoading = true;
+  bool _isDeleting = false;
   String? _errorMessage;
   final MapController _mapController = MapController();
 
@@ -60,6 +61,102 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
       });
     }
   }
+  
+  // Delete report function
+  Future<void> _deleteReport() async {
+    // Show confirmation dialog first
+    final shouldDelete = await _showDeleteConfirmationDialog();
+    
+    if (shouldDelete != true) {
+      return;
+    }
+    
+    setState(() {
+      _isDeleting = true;
+    });
+    
+    try {
+      final reportProvider = Provider.of<ReportProvider>(context, listen: false);
+      
+      // Convert nullable int? to non-nullable int
+      final reportId = _report?.id;
+      if (reportId == null) {
+        throw Exception('Cannot delete report: Invalid report ID');
+      }
+      
+      final success = await reportProvider.deleteReport(reportId);
+      
+      if (success) {
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Report deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          // Navigate back to previous screen
+          Navigator.of(context).pop(true); // Return true to indicate deletion success
+        }
+      } else {
+        // Show error message
+        if (mounted) {
+          setState(() {
+            _isDeleting = false;
+            _errorMessage = 'Failed to delete report: ${reportProvider.errorMessage}';
+          });
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete report: ${reportProvider.errorMessage}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isDeleting = false;
+          _errorMessage = 'Failed to delete report: ${e.toString()}';
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete report: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  // Show confirmation dialog
+  Future<bool?> _showDeleteConfirmationDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Report'),
+        content: const Text(
+          'Are you sure you want to delete this report? This action cannot be undone.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'DELETE',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,18 +166,44 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadReport,
+            onPressed: _isDeleting ? null : _loadReport,
             tooltip: 'Refresh',
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: _isDeleting || _report == null ? null : _deleteReport,
+            tooltip: 'Delete Report',
+            color: Colors.red,
           ),
         ],
       ),
       body: _isLoading
           ? const Center(child: LoadingIndicator(message: 'Loading report details...'))
-          : _errorMessage != null
-              ? _buildErrorView()
-              : _report == null
-                  ? _buildNotFoundView()
-                  : _buildReportDetails(),
+          : _isDeleting
+              ? const Center(child: LoadingIndicator(message: 'Deleting report...'))
+              : _errorMessage != null
+                  ? _buildErrorView()
+                  : _report == null
+                      ? _buildNotFoundView()
+                      : _buildReportDetails(),
+      bottomNavigationBar: _report != null && !_isLoading && !_isDeleting
+          ? _buildBottomBar(context)
+          : null,
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: CustomButton(
+          text: 'Delete Report',
+          icon: Icons.delete_outline,
+          onPressed: _deleteReport,
+          isFullWidth: true,
+          isSecondary: true,
+        ),
+      ),
     );
   }
 

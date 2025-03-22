@@ -18,6 +18,13 @@ class ReportProvider with ChangeNotifier {
   String _errorMessage = '';
   AuthProvider _authProvider;
   
+  // Pagination variables
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _perPage = 10;
+  bool _hasMoreReports = true;
+  bool _isLoadingMore = false;
+  
   ReportProvider({required AuthProvider authProvider}) 
       : _authProvider = authProvider {
     // Initialize storage service
@@ -34,18 +41,36 @@ class ReportProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get hasError => _hasError;
   String get errorMessage => _errorMessage;
+  bool get hasMoreReports => _hasMoreReports;
+  bool get isLoadingMore => _isLoadingMore;
   
-  // Get reports by status
+  // Total reports count (from API)
+  int _totalReports = 0;
+  int get totalReportsCount => _totalReports;
+  
+  // Get reports by status from loaded reports
   List<Report> getReportsByStatus(String status) {
     return _reports.where((report) => report.status.toLowerCase() == status.toLowerCase()).toList();
   }
   
-  // Count reports by status
+  // Count reports by status - uses status percentages to estimate total counts
   int countReportsByStatus(String status) {
-    return _reports.where((report) => report.status.toLowerCase() == status.toLowerCase()).length;
+    final loadedCount = _reports.where((report) => 
+      report.status.toLowerCase() == status.toLowerCase()).length;
+    
+    if (_reports.isEmpty || _totalReports <= _reports.length) {
+      return loadedCount;
+    }
+    
+    // If we have partial data loaded, estimate the total based on current percentages
+    final statusPercentage = _reports.isNotEmpty ? 
+      loadedCount / _reports.length : 0;
+    
+    // Return estimated count based on total reports available
+    return (statusPercentage * _totalReports).round();
   }
   
-  // Load user reports from API
+  // Load user reports from API (initial load, clears existing reports)
   Future<void> loadUserReports() async {
     if (_authProvider.currentUser == null) {
       _setError('User not authenticated');
@@ -57,9 +82,14 @@ class ReportProvider with ChangeNotifier {
       final userId = _authProvider.currentUser!.id;
       final token = _authProvider.token;
       
+      // Reset pagination to start from page 1
+      _currentPage = 1;
+      
       final response = await _apiService.getUserReports(
         userId: userId,
         token: token!,
+        page: _currentPage,
+        perPage: _perPage,
       );
       
       if (response['success']) {
@@ -70,6 +100,16 @@ class ReportProvider with ChangeNotifier {
           }
         }
         
+        // Update pagination info
+        if (response['pagination'] != null) {
+          _totalPages = response['pagination']['total_pages'] ?? 1;
+          _totalReports = response['pagination']['total'] ?? _reports.length;
+          _hasMoreReports = _currentPage < _totalPages;
+        } else {
+          _hasMoreReports = false;
+          _totalReports = _reports.length;
+        }
+        
         _clearError();
       } else {
         _setError(response['message'] ?? 'Failed to load reports');
@@ -78,6 +118,65 @@ class ReportProvider with ChangeNotifier {
       _setError('Failed to load reports: ${e.toString()}');
     } finally {
       _setLoading(false);
+    }
+  }
+  
+  // Load more reports (append to existing list)
+  Future<void> loadMoreReports() async {
+    if (_authProvider.currentUser == null) {
+      return;
+    }
+    
+    // Don't proceed if already loading, no more reports, or there's an error
+    if (_isLoadingMore || !_hasMoreReports || _hasError) {
+      return;
+    }
+    
+    _isLoadingMore = true;
+    notifyListeners();
+    
+    try {
+      final userId = _authProvider.currentUser!.id;
+      final token = _authProvider.token;
+      
+      // Increment page for next batch
+      _currentPage++;
+      
+      final response = await _apiService.getUserReports(
+        userId: userId,
+        token: token!,
+        page: _currentPage,
+        perPage: _perPage,
+      );
+      
+      if (response['success']) {
+        if (response['reports'] != null && response['reports'].isNotEmpty) {
+          for (var reportJson in response['reports']) {
+            _reports.add(Report.fromJson(reportJson));
+          }
+          
+          // Update pagination info
+          if (response['pagination'] != null) {
+            _totalPages = response['pagination']['total_pages'] ?? 1;
+            _hasMoreReports = _currentPage < _totalPages;
+          } else {
+            _hasMoreReports = false;
+          }
+        } else {
+          // No more reports
+          _hasMoreReports = false;
+        }
+      } else {
+        // Failed to load more, revert page counter
+        _currentPage--;
+      }
+    } catch (e) {
+      // Revert page counter on error
+      _currentPage--;
+      debugPrint('Failed to load more reports: ${e.toString()}');
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
     }
   }
   
@@ -135,7 +234,8 @@ class ReportProvider with ChangeNotifier {
           isUploaded: true,
         );
         
-        _reports.add(serverReport);
+        // Add to reports list at the beginning (newest first)
+        _reports.insert(0, serverReport);
         notifyListeners();
         
         // Return the report with database confirmation
@@ -234,6 +334,36 @@ class ReportProvider with ChangeNotifier {
     }
   }
   
+  // Delete a report
+  Future<bool> deleteReport(int reportId) async {
+    if (_authProvider.currentUser == null || _authProvider.token == null) {
+      _setError('User not authenticated');
+      return false;
+    }
+    
+    try {
+      final response = await _apiService.deleteReport(
+        reportId: reportId,
+        token: _authProvider.token!,
+      );
+      
+      if (response['success']) {
+        // Remove the report from local list
+        _reports.removeWhere((report) => report.id == reportId);
+        // Decrease total count
+        _totalReports = _totalReports > 0 ? _totalReports - 1 : 0;
+        notifyListeners();
+        return true;
+      } else {
+        _setError(response['message'] ?? 'Failed to delete report');
+        return false;
+      }
+    } catch (e) {
+      _setError('Failed to delete report: ${e.toString()}');
+      return false;
+    }
+  }
+  
   // Utility methods for state management
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -250,5 +380,12 @@ class ReportProvider with ChangeNotifier {
     _hasError = false;
     _errorMessage = '';
     notifyListeners();
+  }
+  
+  // Reset pagination state
+  void resetPagination() {
+    _currentPage = 1;
+    _totalPages = 1;
+    _hasMoreReports = true;
   }
 }

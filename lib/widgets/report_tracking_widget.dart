@@ -12,7 +12,7 @@ class ReportTrackingWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final reportProvider = Provider.of<ReportProvider>(context);
     
-    final totalReports = reportProvider.reports.length;
+    final totalReports = reportProvider.totalReportsCount;
     final submittedCount = reportProvider.countReportsByStatus('submitted');
     final analyzingCount = reportProvider.countReportsByStatus('analyzing');
     final analyzedCount = reportProvider.countReportsByStatus('analyzed');
@@ -22,48 +22,61 @@ class ReportTrackingWidget extends StatelessWidget {
     final double step2Value = totalReports > 0 ? (submittedCount + analyzingCount) / totalReports : 0;
     final double step3Value = totalReports > 0 ? (submittedCount + analyzingCount + analyzedCount) / totalReports : 0;
     
-    return Card(
+    return Container(
+      // Constrain width to prevent overflow
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Report Tracking',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Report Tracking',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Monitor your waste reports progress',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
+              
+              // Use Expanded to prevent overflow
+              Expanded(
+                child: SizedBox(), // Empty spacer
               ),
+              
+              // Keep the Total text within bounds
+              Text(
+                'Total: $totalReports',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Monitor your waste reports progress',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 12,
             ),
-            const SizedBox(height: 16),
-            
-            // Progress bar with steps
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                height: 24,
-                child: Stack(
-                  children: [
-                    // Background
-                    Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Progress bar with steps - ensure it respects width constraints
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              height: 24,
+              child: Stack(
+                children: [
+                  // Background
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                  ),
                     
                     // Submitted step
                     if (step1Value > 0)
@@ -195,34 +208,32 @@ class ReportTrackingWidget extends StatelessWidget {
               ),
             ),
             
-            const SizedBox(height: 16),
-            
-            // Status legend
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatusItem(
-                  context,
-                  'Submitted',
-                  submittedCount.toString(),
-                  theme.primaryColor,
-                ),
-                _buildStatusItem(
-                  context,
-                  'Analyzing',
-                  analyzingCount.toString(),
-                  Colors.orange,
-                ),
-                _buildStatusItem(
-                  context,
-                  'Analyzed',
-                  analyzedCount.toString(),
-                  Colors.green,
-                ),
-              ],
-            ),
-          ],
-        ),
+          const SizedBox(height: 16),
+          Row(
+            // Use MainAxisAlignment.spaceEvenly to prevent overflow
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStatusItem(
+                context,
+                'Submitted',
+                submittedCount.toString(),
+                theme.primaryColor,
+              ),
+              _buildStatusItem(
+                context,
+                'Analyzing',
+                analyzingCount.toString(),
+                Colors.orange,
+              ),
+              _buildStatusItem(
+                context,
+                'Analyzed',
+                analyzedCount.toString(),
+                Colors.green,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

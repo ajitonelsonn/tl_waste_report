@@ -174,7 +174,7 @@ class ApiService {
     required int userId,
     required String token,
     int page = 1,
-    int perPage = 10,
+    int perPage = 100,
   }) async {
     try {
       final response = await http.get(
@@ -462,6 +462,26 @@ class ApiService {
       };
     }
   }
+
+// Delete a report
+Future<Map<String, dynamic>> deleteReport({
+  required int reportId,
+  required String token,
+}) async {
+  try {
+    final response = await http.delete(
+      Uri.parse('$apiBaseUrl/api/reports/$reportId'),
+      headers: _getHeaders(token: token),
+    );
+    
+    return _parseResponse(response);
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Failed to delete report: ${e.toString()}',
+    };
+  }
+}
   
   // Helper methods
   

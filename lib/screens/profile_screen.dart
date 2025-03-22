@@ -297,27 +297,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          _isEditing 
-                            ? TextFormField(
-                                controller: _emailController,
-                                decoration: const InputDecoration(
-                                  prefixIcon: Icon(Icons.email),
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.emailAddress,
-                                validator: (value) => Validators.email(value),
-                                enabled: true,
-                              )
-                            : ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: const Icon(Icons.email, color: Colors.grey),
-                                title: Text(
-                                  user.email ?? 'No email provided',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.email, color: Colors.grey),
+                            title: Text(
+                              user.email ?? 'No email provided',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
                               ),
+                            ),
+                          ),    
                           
                           const SizedBox(height: 16),
                           
@@ -416,10 +405,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         // Stats cards
                         Consumer<ReportProvider>(
                           builder: (ctx, reportProvider, _) {
-                            final reports = reportProvider.reports;
-                            final totalReports = reports.length;
+                            // Use the total reports count from provider instead of just loaded reports
+                            final totalReports = reportProvider.totalReportsCount;
                             final analyzedCount = reportProvider.countReportsByStatus('analyzed');
-                            
+
                             return Row(
                               children: [
                                 Expanded(
@@ -444,7 +433,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ],
                             );
                           },
-                        ),
+                        )
+
                       ],
                     ),
                   ),

@@ -14,7 +14,7 @@ import 'report_screen.dart';
 import 'map_screen.dart';
 import 'profile_screen.dart';
 import 'report_detail_screen.dart';
-import '../utils/navigation_utils.dart'; // Import the navigation mixin
+import '../utils/navigation_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   static const routeName = '/home';
@@ -40,6 +40,9 @@ class _HomeScreenState extends State<HomeScreen> with ConfirmExitMixin {
   
   late final List<Widget> _pages;
   
+  // ScrollController for detecting when user reaches bottom of list
+  final ScrollController _scrollController = ScrollController();
+  
   @override
   void initState() {
     super.initState();
@@ -48,6 +51,24 @@ class _HomeScreenState extends State<HomeScreen> with ConfirmExitMixin {
       const MapScreen(isInTabView: true),
       const ProfileScreen(isInTabView: true)
     ];
+    
+    // Add scroll listener for pagination
+    _scrollController.addListener(_scrollListener);
+  }
+  
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+  
+  // Scroll listener for infinite scrolling
+  void _scrollListener() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      // Load more reports when user is near the end of the list
+      _loadMoreReports();
+    }
   }
   
   @override
@@ -89,6 +110,16 @@ class _HomeScreenState extends State<HomeScreen> with ConfirmExitMixin {
   Future<void> _loadReports() async {
     final reportProvider = Provider.of<ReportProvider>(context, listen: false);
     await reportProvider.loadUserReports();
+  }
+  
+  // Load more reports for pagination
+  Future<void> _loadMoreReports() async {
+    final reportProvider = Provider.of<ReportProvider>(context, listen: false);
+    
+    // Only load more if there are more to load and we're not already loading
+    if (reportProvider.hasMoreReports && !reportProvider.isLoadingMore && !reportProvider.isLoading) {
+      await reportProvider.loadMoreReports();
+    }
   }
   
   // Pull-to-refresh implementation
@@ -335,6 +366,7 @@ class _HomeScreenState extends State<HomeScreen> with ConfirmExitMixin {
             builder: (ctx, reportProvider, _) {
               final reports = reportProvider.reports;
               final isLoading = reportProvider.isLoading;
+              final isLoadingMore = reportProvider.isLoadingMore;
               final hasError = reportProvider.hasError;
               
               // Loading state
@@ -445,13 +477,24 @@ class _HomeScreenState extends State<HomeScreen> with ConfirmExitMixin {
               final sortedReports = List<Report>.from(reports);
               sortedReports.sort((a, b) => b.reportDate.compareTo(a.reportDate));
               
-              // Reports list
+              // Reports list with infinite scrolling
               return RefreshIndicator(
                 onRefresh: _refreshReports,
                 child: ListView.builder(
+                  controller: _scrollController,
                   padding: const EdgeInsets.all(16),
-                  itemCount: sortedReports.length,
+                  itemCount: sortedReports.length + (isLoadingMore ? 1 : 0),
                   itemBuilder: (ctx, index) {
+                    // Show loading indicator at the bottom when loading more
+                    if (index == sortedReports.length) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+                    
                     final report = sortedReports[index];
                     return ReportCard(
                       report: report,
@@ -463,6 +506,10 @@ class _HomeScreenState extends State<HomeScreen> with ConfirmExitMixin {
                           // Refresh reports when returning from detail screen
                           _refreshReports();
                         });
+                      },
+                      onDeleted: () {
+                        // Refresh the UI after deletion
+                        setState(() {});
                       },
                     );
                   },
