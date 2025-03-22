@@ -3,46 +3,55 @@
 ![tag:innovation-lab](https://img.shields.io/badge/innovation--lab-3D8BD3)
 ![tag:waste-management](https://img.shields.io/badge/waste--management-4CAF50)
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
-A mobile application that enables citizens of Timor-Leste to report waste issues in their communities. Built with Flutter for the Global AI Agents League Hackathon.
 
-## Features
+<p align="center">
+  <a href="https://drive.google.com/drive/folders/1O2CP7oY6aVZOTpRaTXd6RO8T1DjITV4p?usp=sharing"><b>DOWNLOAD APP</b></a>  
+  <br>  
+  <i>Empowering the citizens of Timor-Leste to enhance waste management through community-driven reporting.</i>  
+</p>
 
-- **User Authentication**: Secure registration and login with OTP verification
-- **Report Submission**: Capture and submit waste reports with images, location data, and descriptions
-- **Image Optimization**: Smart compression of images before upload to save bandwidth
-- **Report Tracking**: View the status and analysis results of your submitted reports
-- **Interactive Map**: View waste reports and hotspots on an interactive map
-- **Profile Management**: Update user information and track personal statistics
 
-## Architecture
+## 📱 Overview
 
-The TL Waste Report App follows a provider-based architecture with the following components:
+TL Waste Report is a mobile application that enables citizens of Timor-Leste to easily report waste issues in their communities. Built with Flutter for cross-platform compatibility, this app serves as the front-end interface for the TL Digital Waste Monitoring Network, connecting citizens with waste management authorities and providing a platform for community-driven environmental improvement.
 
-- **Providers**: State management and business logic
-- **Screens**: User interface components
-- **Services**: API communication and device interactions
-- **Models**: Data structures for the application
-- **Utils**: Helper functions and utilities
+## ✨ Key Features
 
-## Technologies Used
+- **Simple Waste Reporting**: Capture and submit waste reports with photos, location data, and descriptions
+- **Location Tracking**: Automatic GPS coordinates capture for precise waste mapping
+- **Report Status Tracking**: Follow the progress of submitted reports through analysis and resolution
+- **Interactive Map**: View waste reports and hotspots in your community
+- **AI-Powered Analysis**: Receive feedback on waste type and severity through backend AI analysis
 
-- **Flutter**: Cross-platform UI toolkit
-- **Provider**: State management
-- **http/dio**: API communication
-- **flutter_secure_storage**: Secure storage for tokens
-- **geolocator/geocoding**: Location services
-- **flutter_map**: Map visualization
-- **image_picker/flutter_image_compress**: Image handling and optimization
-- **connectivity_plus**: Network connectivity detection
 
-## Getting Started
+## 🔧 Technical Architecture
+
+The app follows a provider-based architecture with the following components:
+
+- **UI Layer**: Flutter widgets for responsive and intuitive user interface
+- **Business Logic**: Provider-based state management
+- **Data Layer**: Repository pattern for data access and manipulation
+- **Network Layer**: REST API communication with the backend service
+- **Local Storage**: SQLite database for offline functionality
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="assets/screenshots/home_screen.jpeg" width="200" alt="Home Screen"/>
+  <img src="assets/screenshots/report_screen.jpeg" width="200" alt="Report Screen"/>
+  <img src="assets/screenshots/map_view.jpeg" width="200" alt="Map View"/>
+  <img src="assets/screenshots/report_detail.jpeg" width="200" alt="Report Details"/>
+</p>
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Flutter SDK (2.10.0 or higher)
-- Dart SDK (2.16.0 or higher)
+- Flutter SDK (2.12.0 or higher)
+- Dart SDK (2.14.0 or higher)
 - Android Studio or VS Code with Flutter extensions
 - An emulator or physical device for testing
 
@@ -61,8 +70,8 @@ The TL Waste Report App follows a provider-based architecture with the following
 
 3. Create a `.env` file in the project root with the following variables:
    ```
-   API_BASE_URL=http://localhost:5002
-   REPORTING_AGENT_URL=http://localhost:5001
+   API_BASE_URL=https://your-api-base-url.com
+   REPORTING_AGENT_URL=https://your-reporting-agent-url.com
    ```
 
 4. Run the app:
@@ -70,57 +79,52 @@ The TL Waste Report App follows a provider-based architecture with the following
    flutter run
    ```
 
-## Project Structure
 
-```
-lib/
-├── config/               # App configuration
-├── models/               # Data models
-├── providers/            # State management
-├── screens/              # UI screens
-├── services/             # API and device services
-├── utils/                # Helper utilities
-├── widgets/              # Reusable UI components
-└── main.dart             # Entry point
-```
+## 🔄 User Flow
 
-## Key Screens
+1. **Onboarding**: Users register or login with mobile number/email
+2. **Home Screen**: Dashboard showing nearby waste issues and personal reports
+3. **Report Creation**: Taking photos, adding descriptions, and submitting reports
+4. **Status Tracking**: Monitoring report status from submission through analysis
+5. **Map View**: Exploring waste reports and hotspots on an interactive map
+6. **Profile**: Managing personal information and viewing submission history
 
-- **Splash Screen**: Initial loading screen with app branding
-- **Login/Register Screens**: User authentication interfaces
-- **Home Screen**: Overview of reports and status
-- **Report Screen**: Submit new waste reports with camera and location
-- **Map Screen**: Interactive map showing reports and hotspots
-- **Profile Screen**: User profile management
-- **Report Detail Screen**: Detailed view of individual reports
+## 🧩 Integration with TL Digital Waste Monitoring Network
 
-## App Flow
+This app is part of a larger ecosystem:
 
-1. Users register or login with mobile number/email
-2. After authentication, users can submit reports about waste issues
-3. Reports include location data, images, and descriptions
-4. Submitted reports are sent to the central waste monitoring system
-5. The AI-powered analysis agent processes the reports
-6. Users can track the status of their reports and view analysis results
-7. Users can explore nearby waste reports and hotspots on the map
-
-## Future Enhancements
-
-- Multi-language support
-- Push notifications for report status updates
-- Gamification features to encourage community participation
-- Integration with waste collection schedules
-- Enhanced offline capabilities with local database
+1. **Mobile App (this repo)**: Front-end interface for citizens
+2. [**Reporting Agent**](https://github.com/ajitonelsonn/tl-waste-monitoring/tree/main/reporting): Processes report submissions
+3. [**Analysis Agent**](https://github.com/ajitonelsonn/tl-waste-monitoring/tree/main/analysis): AI-powered waste classification
+4. [**TL Waste Dashboard**](https://github.com/ajitonelsonn/tl-waste-dashboard): Web interface for public dashboard
 
 
-## Acknowledgements
+## 🔍 Performance Considerations
 
-- The Global AI Agents League Hackathon
-- Fetch.ai for providing the agent framework
-- Open-source Flutter community
+The app is optimized for the specific conditions in Timor-Leste:
 
-## ALL TL Digital Waste Monitoring Network REPO
-- [TL Digital Waste Monitoring Network](https://github.com/ajitonelsonn/TLWasteR) - Main repo just explanation
-- [TL-WASTE-MONITORING](https://github.com/ajitonelsonn/tl-waste-monitoring) - API for agents and others
-- [TL Waste Report App](https://github.com/ajitonelsonn/tl_waste_report) - Flutter mobile application for citizens
-- [TL Waste Dashboard](https://github.com/ajitonelsonn/tl-waste-dashboard) - Next.js web dashboard for public
+- **Low bandwidth usage**: Compressed images and efficient API calls
+- **Battery efficiency**: Optimized location services and background processes
+- **Storage efficiency**: Minimal local data storage with cleanup policies
+- **Offline support**: Fully functional core features without constant connectivity
+
+## 📚 Related Repositories
+
+This app is part of the TL Digital Waste Monitoring Network:
+
+- [TL Digital Waste Monitoring Network](https://github.com/ajitonelsonn/TLWasteR) - Main project overview
+- [TL-WASTE-MONITORING](https://github.com/ajitonelsonn/tl-waste-monitoring) - Backend API and AI agents
+- [TL Waste Dashboard](https://github.com/ajitonelsonn/tl-waste-dashboard) - Web dashboard for officials
+
+
+## 🙏 Acknowledgments
+
+- The Global AI Agents League Hackathon organizers
+- [Fetch.ai](https://fetch.ai/) for the agent framework
+- [ASI-1 Mini](https://asi1.ai/) for AI image analysis
+- Flutter team for the amazing cross-platform framework
+- The people of Timor-Leste for inspiring this environmental solution
+
+---
+
+For questions or support, please open an issue on GitHub or contact our team.
