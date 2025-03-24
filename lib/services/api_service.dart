@@ -250,19 +250,28 @@ class ApiService {
     required String token,
   }) async {
     try {
+      // Use apiBaseUrl instead of reportingAgentUrl
+      final url = '$apiBaseUrl/api/reports/$reportId';
+      print("Calling report detail API URL: $url");
+
       final response = await http.get(
-        Uri.parse('$reportingAgentUrl/api/reports/$reportId'),
+        Uri.parse(url),
         headers: _getHeaders(token: token),
       );
-      
+
+      print("Report detail API response status: ${response.statusCode}");
+      print("Report detail API response body: ${response.body}");
+
       return _parseResponse(response);
     } catch (e) {
+      print("Error in getReport: ${e.toString()}");
       return {
         'success': false,
         'message': 'Failed to get report: ${e.toString()}',
       };
     }
   }
+
   
   // Submit a new report (to reporting agent)
   Future<Map<String, dynamic>> submitReport({

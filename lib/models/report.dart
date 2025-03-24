@@ -16,6 +16,7 @@ class Report {
   final String? locationName;
   final Map<String, dynamic>? deviceInfo;
   final bool isUploaded;
+  final String? fullDescription; // Added field for full analysis description
 
   Report({
     this.id,
@@ -32,6 +33,7 @@ class Report {
     this.locationName,
     this.deviceInfo,
     this.isUploaded = true,
+    this.fullDescription, // Add to constructor
   });
 
   // Create from JSON (from API)
@@ -92,6 +94,7 @@ class Report {
       locationName: json['address_text'],
       deviceInfo: deviceInfo,
       isUploaded: true,
+      fullDescription: json['full_description'], // Add this line to parse the field
     );
   }
 
@@ -110,6 +113,7 @@ class Report {
           ? Map<String, dynamic>.from(map['device_info']) 
           : null,
       isUploaded: map['is_uploaded'] == 1,
+      fullDescription: map['full_description'], // Add this line
     );
   }
 
@@ -144,6 +148,7 @@ class Report {
       'timestamp': reportDate.millisecondsSinceEpoch,
       'device_info': deviceInfo,
       'is_uploaded': isUploaded ? 1 : 0,
+      'full_description': fullDescription, // Add this line
     };
   }
 
@@ -163,6 +168,7 @@ class Report {
     String? locationName,
     Map<String, dynamic>? deviceInfo,
     bool? isUploaded,
+    String? fullDescription, // Add this line
   }) {
     return Report(
       id: id ?? this.id,
@@ -179,6 +185,7 @@ class Report {
       locationName: locationName ?? this.locationName,
       deviceInfo: deviceInfo ?? this.deviceInfo,
       isUploaded: isUploaded ?? this.isUploaded,
+      fullDescription: fullDescription ?? this.fullDescription, // Add this line
     );
   }
 }

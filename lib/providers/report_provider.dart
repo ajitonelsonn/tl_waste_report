@@ -251,44 +251,43 @@ class ReportProvider with ChangeNotifier {
     }
   }
   
+
   // Get a report by ID
   Future<Report?> getReportById(int reportId) async {
     try {
-      // Check in submitted reports
-      final reportIndex = _reports.indexWhere(
-        (report) => report.id == reportId,
-      );
-      
-      if (reportIndex >= 0) return _reports[reportIndex];
-      
-      // If not found locally, fetch from API
-      _setLoading(true);
-      
-      if (_authProvider.currentUser != null && _authProvider.token != null) {
-        final token = _authProvider.token!;
-        
-        final response = await _apiService.getReport(
-          reportId: reportId,
-          token: token,
-        );
-        
-        if (response['success'] && response['report'] != null) {
-          final report = Report.fromJson(response['report']);
-          
-          // Add to reports list if not exists
-          if (!_reports.any((r) => r.id == reportId)) {
-            _reports.add(report);
-            notifyListeners();
-          }
-          
-          return report;
-        } else {
-          _setError(response['message'] ?? 'Failed to get report');
-          return null;
-        }
+      // Check if user is authenticated
+      if (_authProvider.currentUser == null || _authProvider.token == null) {
+        _setError('User not authenticated');
+        return null;
       }
-      
-      return null;
+
+      _setLoading(true);
+      final token = _authProvider.token!;
+
+      // Always fetch from API to get full details including full_description
+      final response = await _apiService.getReport(
+        reportId: reportId,
+        token: token,
+      );
+
+      if (response['success'] && response['report'] != null) {
+        final report = Report.fromJson(response['report']);
+
+        // Update the report in the cache if it exists
+        final index = _reports.indexWhere((r) => r.id == reportId);
+        if (index >= 0) {
+          _reports[index] = report;
+        } else {
+          // Add to reports list if not exists
+          _reports.add(report);
+        }
+
+        notifyListeners();
+        return report;
+      } else {
+        _setError(response['message'] ?? 'Failed to get report');
+        return null;
+      }
     } catch (e) {
       _setError('Failed to get report: ${e.toString()}');
       return null;
