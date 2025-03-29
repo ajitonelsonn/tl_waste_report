@@ -16,6 +16,7 @@ import 'screens/profile_screen.dart';
 import 'services/storage_service.dart';
 import 'screens/report_detail_screen.dart';
 import 'screens/otp_verification_screen.dart';
+import 'screens/change_password_screen.dart';
 
 void main() async {
   // Ensure Flutter widgets are initialized
@@ -80,6 +81,7 @@ class MyApp extends StatelessWidget {
                 username: '',
                 isRegistration: true,
               ),
+              ChangePasswordScreen.routeName: (ctx) => const ChangePasswordScreen(),
             },
             // If route not found in the routes map
             onGenerateRoute: (settings) {

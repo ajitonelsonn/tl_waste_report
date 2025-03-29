@@ -1,9 +1,9 @@
-// lib/screens/register_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../utils/validators.dart';
+import '../utils/error_handler.dart'; // Import the error handler
 import '../widgets/custom_button.dart';
 import '../services/api_service.dart';
 import 'otp_verification_screen.dart';
@@ -38,6 +38,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _confirmPasswordController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  // Set error message with secure error handling
+  void _setSecureError(dynamic message) {
+    setState(() {
+      _errorMessage = ErrorHandler.sanitizeErrorMessage(message);
+    });
   }
 
   Future<void> _register() async {
@@ -90,15 +97,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           );
         }
       } else {
-        // Handle error
-        setState(() {
-          _errorMessage = response['message'] ?? 'Registration failed';
-        });
+        // Handle error with secure error handling
+        _setSecureError(response['message'] ?? 'Registration failed');
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to connect to server. Please try again later.';
-      });
+      // Handle exception with secure error handling
+      _setSecureError(e);
     } finally {
       setState(() {
         _isLoading = false;
@@ -296,28 +300,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Error message
+                      // Error message - UPDATED with secure error handling
                       if (_errorMessage != null || authProvider.hasError)
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          margin: const EdgeInsets.only(bottom: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.red.shade300),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.error_outline, color: Colors.red),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _errorMessage ?? authProvider.errorMessage,
-                                  style: const TextStyle(color: Colors.red),
-                                ),
-                              ),
-                            ],
-                          ),
+                        ErrorHandler.buildErrorWidget(
+                          _errorMessage ?? authProvider.errorMessage
                         ),
 
                       // Register button

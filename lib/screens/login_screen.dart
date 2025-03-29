@@ -4,6 +4,7 @@ import 'package:animate_do/animate_do.dart';
 
 import '../providers/auth_provider.dart';
 import '../utils/validators.dart';
+import '../utils/error_handler.dart';
 import '../widgets/custom_button.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
@@ -281,36 +282,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 12),
 
-                              // Error message
+                              // Error message - UPDATED with secure error handling
                               if (authProvider.hasError)
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.shade50,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.red.shade300),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.error_outline, 
-                                        color: Colors.red.shade700,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          authProvider.errorMessage,
-                                          style: TextStyle(
-                                            color: Colors.red.shade700,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                ErrorHandler.buildErrorWidget(authProvider.errorMessage),
 
                               // Login button
                               SizedBox(

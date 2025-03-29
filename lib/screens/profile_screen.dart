@@ -10,6 +10,7 @@ import '../utils/validators.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/loading_indicator.dart';
 import '../screens/login_screen.dart';
+import 'change_password_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   static const routeName = '/profile';
@@ -81,6 +82,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _newProfileImage = null;
       }
     });
+  }
+
+  //change password
+  void _navigateToChangePassword() {
+    Navigator.of(context).pushNamed(ChangePasswordScreen.routeName);
   }
 
   // Save profile changes
@@ -439,7 +445,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
+
+                  // Change password button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: CustomButton(
+                      text: 'Change Password',
+                      icon: Icons.lock_outline,
+                      onPressed: _navigateToChangePassword,
+                      isSecondary: true,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
                   
                   // Sign out button
                   Padding(

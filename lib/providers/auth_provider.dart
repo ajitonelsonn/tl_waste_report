@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';  // Add this import for navigation
+import 'package:flutter/material.dart';
 
 import '../models/user.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../screens/login_screen.dart';
+import '../utils/error_handler.dart';
 
 class AuthProvider with ChangeNotifier {
   User? _user;
@@ -67,6 +68,7 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       // If there's an error loading credentials, clear everything
       await _clearAuthData();
+      // Don't show error for auto-login failure to user
     } finally {
       _setLoading(false);
     }
@@ -78,36 +80,47 @@ class AuthProvider with ChangeNotifier {
     _clearError();
     
     try {
-      print("Attempting to sign in with username: $username");
+      if (kDebugMode) {
+        print("Attempting to sign in with username: $username");
+      }
+      
       final response = await _apiService.login(
         username: username,
         password: password,
       );
       
-      print("Login API response: $response");
-      print("Response success: ${response['success']}");
+      if (kDebugMode) {
+        print("Login API response success: ${response['success']}");
+      }
       
       if (response['success']) {
         // Save credentials
         _token = response['token'];
-        print("Token received: $_token");
         
         try {
           _user = User.fromJson(response['user']);
-          print("User parsed successfully: ${_user?.username}");
+          if (kDebugMode) {
+            print("User parsed successfully: ${_user?.username}");
+          }
         } catch (e) {
-          print("Error parsing user data: $e");
-          _setError('Error parsing user data: $e');
+          if (kDebugMode) {
+            print("Error parsing user data: $e");
+          }
+          _setSecureError('Error processing user information');
           return false;
         }
         
         // Save to secure storage
         try {
           await _saveAuthData();
-          print("Auth data saved to secure storage");
+          if (kDebugMode) {
+            print("Auth data saved to secure storage");
+          }
         } catch (e) {
-          print("Error saving auth data: $e");
-          _setError('Error saving auth data: $e');
+          if (kDebugMode) {
+            print("Error saving auth data: $e");
+          }
+          _setSecureError('Error saving login information');
           return false;
         }
         
@@ -117,12 +130,14 @@ class AuthProvider with ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        _setError(response['message'] ?? 'Authentication failed.');
+        _setSecureError(response['message'] ?? 'Authentication failed');
         return false;
       }
     } catch (e) {
-      print("SignIn exception: $e");
-      _setError('Failed to connect to server. Please check your internet connection.');
+      if (kDebugMode) {
+        print("SignIn exception: $e");
+      }
+      _setSecureError(e);
       return false;
     } finally {
       _setLoading(false);
@@ -135,7 +150,10 @@ class AuthProvider with ChangeNotifier {
     _clearError();
 
     try {
-      print("Attempting to register with username: $username, email: $email");
+      if (kDebugMode) {
+        print("Attempting to register with username: $username, email: $email");
+      }
+      
       final response = await _apiService.register(
         username: username,
         email: email,
@@ -143,24 +161,32 @@ class AuthProvider with ChangeNotifier {
         phoneNumber: phoneNumber,
       );
 
-      print("Registration API response: $response");
+      if (kDebugMode) {
+        print("Registration API response: $response");
+      }
 
       if (response['success'] || response['status'] == 'success') {
         // Don't try to save user data yet - this happens after OTP verification
-        print("Registration initiated successfully");
+        if (kDebugMode) {
+          print("Registration initiated successfully");
+        }
         return true;
       } else {
-        _setError(response['message'] ?? 'Registration failed.');
+        _setSecureError(response['message'] ?? 'Registration failed');
         return false;
       }
     } catch (e) {
-      print("Registration exception: $e");
-      _setError('Failed to connect to server. Please check your internet connection.');
+      if (kDebugMode) {
+        print("Registration exception: $e");
+      }
+      _setSecureError(e);
       return false;
     } finally {
       _setLoading(false);
     }
   }
+  
+  // Save auth data from response (for OTP verification etc.)
   Future<void> saveAuthDataFromResponse(Map<String, dynamic> data) async {
     try {
       if (data['token'] != null && data['user'] != null) {
@@ -174,8 +200,10 @@ class AuthProvider with ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print("Error saving auth data: $e");
-      _setError('Error processing authentication data');
+      if (kDebugMode) {
+        print("Error saving auth data: $e");
+      }
+      _setSecureError('Error processing authentication data');
     }
   }
   
@@ -228,89 +256,89 @@ class AuthProvider with ChangeNotifier {
   }
   
   // Update user profile
-  // In auth_provider.dart, update the updateProfile method:
-
-Future<bool> updateProfile({
-  String? email,
-  String? phoneNumber,
-  String? profileImageUrl,
-}) async {
-  if (_user == null || _token == null) {
-    _setError('Not authenticated');
-    return false;
-  }
-  
-  _setLoading(true);
-  _clearError();
-  
-  try {
-    final response = await _apiService.updateUserProfile(
-      userId: _user!.id,
-      token: _token!,
-      email: email,
-      phoneNumber: phoneNumber,
-      profileImageUrl: profileImageUrl,
-    );
+  Future<bool> updateProfile({
+    String? email,
+    String? phoneNumber,
+    String? profileImageUrl,
+  }) async {
+    if (_user == null || _token == null) {
+      _setSecureError('Not authenticated');
+      return false;
+    }
     
-    if (response['success'] || response['status'] == 'success') {
-      // Check if user data is an array (as in your API response) or an object
-      var userData;
-      if (response['user'] is List) {
-        // Handle array format - create a map from the array
-        final userArray = response['user'] as List;
-        if (userArray.isNotEmpty) {
-          userData = {
-            'user_id': userArray[0],
-            'username': userArray[1],
-            'email': userArray[2],
-            'phone_number': userArray[3],
-            'registration_date': userArray[4],
-            'last_login': userArray[5],
-            'account_status': userArray[6],
-            'profile_image_url': userArray[7],
-            'verification_status': userArray[8],
-          };
-        }
-      } else {
-        // Handle object format
-        userData = response['user'];
-      }
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      final response = await _apiService.updateUserProfile(
+        userId: _user!.id,
+        token: _token!,
+        email: email,
+        phoneNumber: phoneNumber,
+        profileImageUrl: profileImageUrl,
+      );
       
-      if (userData != null) {
-        // Update user data
-        try {
-          _user = User.fromJson(userData);
-          
-          // Update secure storage
-          await _storageService.write('user_data', json.encode(_user!.toJson()));
-          
-          notifyListeners();
-          return true;
-        } catch (e) {
-          print("Error parsing user data: $e");
-          _setError('Error processing user data');
+      if (response['success'] || response['status'] == 'success') {
+        // Check if user data is an array (as in your API response) or an object
+        var userData;
+        if (response['user'] is List) {
+          // Handle array format - create a map from the array
+          final userArray = response['user'] as List;
+          if (userArray.isNotEmpty) {
+            userData = {
+              'user_id': userArray[0],
+              'username': userArray[1],
+              'email': userArray[2],
+              'phone_number': userArray[3],
+              'registration_date': userArray[4],
+              'last_login': userArray[5],
+              'account_status': userArray[6],
+              'profile_image_url': userArray[7],
+              'verification_status': userArray[8],
+            };
+          }
+        } else {
+          // Handle object format
+          userData = response['user'];
+        }
+        
+        if (userData != null) {
+          // Update user data
+          try {
+            _user = User.fromJson(userData);
+            
+            // Update secure storage
+            await _storageService.write('user_data', json.encode(_user!.toJson()));
+            
+            notifyListeners();
+            return true;
+          } catch (e) {
+            if (kDebugMode) {
+              print("Error parsing user data: $e");
+            }
+            _setSecureError('Error processing user data');
+            return false;
+          }
+        } else {
+          _setSecureError('Invalid user data in response');
           return false;
         }
       } else {
-        _setError('Invalid user data in response');
+        _setSecureError(response['message'] ?? 'Profile update failed');
         return false;
       }
-    } else {
-      _setError(response['message'] ?? 'Profile update failed.');
+    } catch (e) {
+      _setSecureError(e);
       return false;
+    } finally {
+      _setLoading(false);
     }
-  } catch (e) {
-    _setError('Failed to connect to server. Please check your internet connection.');
-    return false;
-  } finally {
-    _setLoading(false);
   }
-}
   
   // Change password
   Future<bool> changePassword(String currentPassword, String newPassword) async {
     if (_user == null || _token == null) {
-      _setError('Not authenticated');
+      _setSecureError('Not authenticated');
       return false;
     }
     
@@ -327,11 +355,11 @@ Future<bool> updateProfile({
       if (response['success']) {
         return true;
       } else {
-        _setError(response['message'] ?? 'Password change failed.');
+        _setSecureError(response['message'] ?? 'Password change failed');
         return false;
       }
     } catch (e) {
-      _setError('Failed to connect to server. Please check your internet connection.');
+      _setSecureError(e);
       return false;
     } finally {
       _setLoading(false);
@@ -341,7 +369,7 @@ Future<bool> updateProfile({
   // Refresh user profile
   Future<bool> refreshProfile() async {
     if (_user == null || _token == null) {
-      _setError('Not authenticated');
+      _setSecureError('Not authenticated');
       return false;
     }
     
@@ -360,11 +388,11 @@ Future<bool> updateProfile({
         notifyListeners();
         return true;
       } else {
-        _setError(response['message'] ?? 'Failed to refresh profile.');
+        _setSecureError(response['message'] ?? 'Failed to refresh profile');
         return false;
       }
     } catch (e) {
-      _setError('Failed to connect to server. Please check your internet connection.');
+      _setSecureError(e);
       return false;
     } finally {
       _setLoading(false);
@@ -377,9 +405,9 @@ Future<bool> updateProfile({
     notifyListeners();
   }
   
-  void _setError(String message) {
+  void _setSecureError(dynamic message) {
     _hasError = true;
-    _errorMessage = message;
+    _errorMessage = ErrorHandler.sanitizeErrorMessage(message);
     notifyListeners();
   }
   
