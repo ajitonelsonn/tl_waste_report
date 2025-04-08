@@ -6,13 +6,11 @@
 ![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logo=dart&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
-
 <p align="center">
   <a href="https://drive.google.com/drive/folders/1O2CP7oY6aVZOTpRaTXd6RO8T1DjITV4p?usp=sharing"><b>DOWNLOAD APP</b></a>  
   <br>  
   <i>Empowering the citizens of Timor-Leste to enhance waste management through community-driven reporting.</i>  
 </p>
-
 
 ## 📱 Overview
 
@@ -25,7 +23,6 @@ TL Waste Report is a mobile application that enables citizens of Timor-Leste to 
 - **Report Status Tracking**: Follow the progress of submitted reports through analysis and resolution
 - **Interactive Map**: View waste reports and hotspots in your community
 - **AI-Powered Analysis**: Receive feedback on waste type and severity through backend AI analysis
-
 
 ## 🔧 Technical Architecture
 
@@ -58,27 +55,50 @@ The app follows a provider-based architecture with the following components:
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/ajitonelsonn/tl_waste_report.git
    cd tl_waste_report
    ```
 
 2. Install dependencies:
+
    ```bash
    flutter pub get
    ```
 
 3. Create a `.env` file in the project root with the following variables:
+
    ```
-   API_BASE_URL=https://your-api-base-url.com
-   REPORTING_AGENT_URL=https://your-reporting-agent-url.com
+   #API_BASE_URL=api-base-url example "http://192.168.31.105:5002"
+   #REPORTING_AGENT_URL=api-agent-url example "http://192.168.31.105:5001"
+
+   # Feature Flags
+   ENABLE_OFFLINE_MODE=true
+   ENABLE_MAP_VIEW=true
+   ENABLE_PUSH_NOTIFICATIONS=false
+
+   # Default Location (Dili, Timor-Leste)
+   DEFAULT_LATITUDE=-8.556856
+   DEFAULT_LONGITUDE=125.560314
+   DEFAULT_LOCATION_NAME=Dili, Timor-Leste
+   DEFAULT_MAP_ZOOM=12.0
+
+   # Image Settings
+   IMAGE_COMPRESSION_QUALITY=80
+   MAX_IMAGE_WIDTH=1200
+
+   # App Settings
+   SYNC_INTERVAL_MINUTES=15
+   API_TIMEOUT_SECONDS=30
+   DEFAULT_LANGUAGE=en
+
    ```
 
 4. Run the app:
    ```bash
    flutter run
    ```
-
 
 ## 🔄 User Flow
 
@@ -98,7 +118,6 @@ This app is part of a larger ecosystem:
 3. [**Analysis Agent**](https://github.com/ajitonelsonn/tl-waste-monitoring/tree/main/analysis): AI-powered waste classification
 4. [**TL Waste Dashboard**](https://github.com/ajitonelsonn/tl-waste-dashboard): Web interface for public dashboard
 
-
 ## 🔍 Performance Considerations
 
 The app is optimized for the specific conditions in Timor-Leste:
@@ -115,7 +134,6 @@ This app is part of the TL Digital Waste Monitoring Network:
 - [TL Digital Waste Monitoring Network](https://github.com/ajitonelsonn/TLWasteR) - Main project overview
 - [TL-WASTE-MONITORING](https://github.com/ajitonelsonn/tl-waste-monitoring) - Backend API and AI agents
 - [TL Waste Dashboard](https://github.com/ajitonelsonn/tl-waste-dashboard) - Web dashboard for officials
-
 
 ## 🙏 Acknowledgments
 
